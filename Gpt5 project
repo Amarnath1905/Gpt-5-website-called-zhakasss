@@ -1,0 +1,326 @@
+// Go the terminal and create frontend
+mkdir zhakasss
+cd zhakasss
+npx create-vite@latest frontend
+# Select React and JavaScript
+cd frontend
+npm install
+npm install -D tailwindcss postcss autoprefixer
+npx tailwindcss init -p
+ // frontend tailwind.config.js
+
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: [
+    "./index.html",
+    "./src/**/*.{js,ts,jsx,tsx}",
+  ],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+}
+
+//frontend /src/index.css
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+//frontend/public/index.html 
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zhakasss Clothing</title>
+  </head>
+  <body class="bg-gray-50">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+//frontend/src/app.jsx
+
+import { useState } from "react";
+
+const products = [
+  { id: 1, name: "Classic Black T-Shirt", price: 899, img: "https://via.placeholder.com/300" },
+  { id: 2, name: "White Cotton Tee", price: 799, img: "https://via.placeholder.com/300" },
+  { id: 3, name: "Navy Blue V-Neck", price: 999, img: "https://via.placeholder.com/300" },
+];
+
+export default function App() {
+  const [showForm, setShowForm] = useState(false);
+  const [formData, setFormData] = useState({ name: "", phone: "", password: "" });
+
+  const handleBuy = () => {
+    setShowForm(true);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    alert(`Registered: ${formData.name}`);
+    setShowForm(false);
+  };
+
+  return (
+    <div className="max-w-5xl mx-auto p-6">
+      <h1 className="text-4xl font-bold mb-8 text-center">Zhakasss Clothing</h1>
+      {!showForm ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {products.map((p) => (
+            <div key={p.id} className="bg-white p-4 rounded-lg shadow-lg">
+              <img src={p.img} alt={p.name} className="mb-4 rounded" />
+              <h2 className="text-xl font-semibold">{p.name}</h2>
+              <p className="text-gray-700">₹{p.price}</p>
+              <button
+                className="bg-black text-white px-4 py-2 mt-4 rounded"
+                onClick={handleBuy}
+              >
+                Buy Now
+              </button>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-lg max-w-md mx-auto">
+          <h2 className="text-2xl font-semibold mb-4">Register to Buy</h2>
+          <input
+            type="text"
+            placeholder="Full Name"
+            className="border p-2 w-full mb-3"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            required
+          />
+          <input
+            type="tel"
+            placeholder="Phone Number"
+            className="border p-2 w-full mb-3"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            className="border p-2 w-full mb-3"
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            required
+          />
+          <button type="submit" className="bg-black text-white px-4 py-2 rounded">
+            Register & Buy
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+// frontend /src/main.jsx
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import './index.css'
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+)
+// frontend run tip 
+cd frontend
+npm run dev
+
+// backend started 
+
+
+// zhakass/backend/package.json
+
+{
+  "name": "zhakasss-backend",
+  "version": "1.0.0",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "mongoose": "^7.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  }
+}
+
+//zhakass/backend/.env.example
+
+PORT=5000
+MONGO_URI=mongodb://localhost:27017/zhakasss
+JWT_SECRET=replace_with_a_strong_secret
+
+
+//zhakass/backend/server.js
+
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+require("dotenv").config();
+
+const authRoutes = require("./routes/auth");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// API routes
+app.use("/api/auth", authRoutes);
+
+app.get("/", (req, res) => res.json({ ok: true, message: "zhakasss backend running" }));
+
+const PORT = process.env.PORT || 5000;
+
+mongoose
+  .connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log("Connected to MongoDB");
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  })
+  .catch((err) => {
+    console.error("MongoDB connection error:", err.message);
+  });
+
+//zhakasss/backend/models/User.js
+const mongoose = require("mongoose");
+
+const userSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    phone: { type: String, required: true, unique: true },
+    passwordHash: { type: String, required: true }
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("User", userSchema);
+
+//zhakasss/backend/routes/auth.js
+
+const express = require("express");
+const router = express.Router();
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
+
+// POST /api/auth/register
+router.post("/register", async (req, res) => {
+  try {
+    const { name, phone, password } = req.body;
+    if (!name || !phone || !password) return res.status(400).json({ message: "Missing fields" });
+    if (!/^\d{10}$/.test(phone)) return res.status(400).json({ message: "Phone must be 10 digits" });
+    if (password.length < 6) return res.status(400).json({ message: "Password too short" });
+
+    const existing = await User.findOne({ phone });
+    if (existing) return res.status(400).json({ message: "Phone already registered" });
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
+
+    const user = new User({ name, phone, passwordHash });
+    await user.save();
+
+    const safeUser = { id: user._id, name: user.name, phone: user.phone };
+    res.json({ user: safeUser });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// POST /api/auth/login
+router.post("/login", async (req, res) => {
+  try {
+    const { phone, password } = req.body;
+    if (!phone || !password) return res.status(400).json({ message: "Missing fields" });
+
+    const user = await User.findOne({ phone });
+    if (!user) return res.status(400).json({ message: "Invalid credentials" });
+
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) return res.status(400).json({ message: "Invalid credentials" });
+
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || "secret", { expiresIn: "7d" });
+    res.json({ token, user: { id: user._id, name: user.name, phone: user.phone } });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+module.exports = router;
+
+//install and run backend
+
+cd zhakasss/backend
+npm install
+# create .env from .env.example and set MONGO_URI and JWT_SECRET
+cp .env.example .env
+# edit .env to set MONGO_URI and JWT_SECRET
+npm run dev   # uses nodemon, or `npm start` to run node server.js
+
+// Change frontend to call backend (small edit)
+
+// at top of App.jsx add:
+const API = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+// replace handleSubmit with:
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  // basic client validation
+  if (!formData.name.trim() || !/^\d{10}$/.test(formData.phone) || formData.password.length < 6) {
+    alert("Enter valid name, 10-digit phone and password >= 6 chars");
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/api/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: formData.name.trim(),
+        phone: formData.phone,
+        password: formData.password
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || "Registration failed");
+    // store user in localStorage for demo session
+    localStorage.setItem("zhakasss_user", JSON.stringify({ name: data.user.name, phone: data.user.phone }));
+    alert(`Welcome ${data.user.name}! Registration successful.`);
+    setShowForm(false);
+    setFormData({ name: "", phone: "", password: "" });
+  } catch (err) {
+    alert(err.message);
+  }
+};
+
+VITE_API_URL=http://localhost:5000
+
+// How to push to GitHub (one repo with frontend + backend)
+
+git init
+git add .
+git commit -m "Initial commit - zhakasss fullstack demo"
+# create repo on GitHub first, then:
+git remote add origin https://github.com/<your-username>/zhakasss.git
+git branch -M main
+git push -u origin main
+
+// Done
